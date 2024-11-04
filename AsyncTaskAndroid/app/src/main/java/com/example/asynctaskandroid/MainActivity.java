@@ -1,79 +1,64 @@
 package com.example.asynctaskandroid;
 
-import android.os.AsyncTask;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
-import android.widget.TextView;
-
-import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
-    private Button button;
-    private EditText time;
-    private TextView finalResult;
-    private ProgressBar progressBar;
+    private static final String TEXT_STATE = "currentText";
+
+    private TextView mTextView;
+    private EditText mTimeInput;
+    private Button mRunButton;
+    private ProgressBar mProgressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        time = findViewById(R.id.in_time);
-        button = findViewById(R.id.btn_run);
-        finalResult = findViewById(R.id.tv_result);
-        progressBar = new ProgressBar(this);
-        progressBar.setVisibility(View.INVISIBLE); // Hide the progress bar initially
+        // Initialize views
+        mTextView = findViewById(R.id.tv_result);
+        mTimeInput = findViewById(R.id.in_time);
+        mRunButton = findViewById(R.id.btn_run);
+        mProgressBar = findViewById(R.id.progressBar);
 
-        button.setOnClickListener(new View.OnClickListener() {
+        // Restore TextView if there is a savedInstanceState
+        if (savedInstanceState != null) {
+            mTextView.setText(savedInstanceState.getString(TEXT_STATE));
+        }
+
+        // Set click listener for the button
+        mRunButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                AsyncTaskRunner runner = new AsyncTaskRunner();
-                String sleepTime = time.getText().toString();
-                runner.execute(sleepTime);
+                startTask();
             }
         });
     }
 
-    private class AsyncTaskRunner extends AsyncTask<String, String, String> {
-        private String resp;
+    private void startTask() {
+        // Get the time from input
+        String timeString = mTimeInput.getText().toString();
+        int time = timeString.isEmpty() ? 1 : Integer.parseInt(timeString);
 
-        @Override
-        protected void onPreExecute() {
-            // Show the progress bar
-            progressBar.setVisibility(View.VISIBLE);
-            finalResult.setText("Starting task...");
-        }
+        // Show progress bar
+        mProgressBar.setVisibility(View.VISIBLE);
 
-        @Override
-        protected String doInBackground(String... params) {
-            publishProgress("Sleeping..."); // Calls onProgressUpdate()
-            try {
-                int time = Integer.parseInt(params[0]) * 1000;
-                Thread.sleep(time);
-                resp = "Slept for " + params[0] + " seconds";
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                resp = "Interrupted: " + e.getMessage();
-            } catch (Exception e) {
-                e.printStackTrace();
-                resp = "Error: " + e.getMessage();
-            }
-            return resp;
-        }
+        // Put a message in the text view
+        mTextView.setText(R.string.napping);
 
-        @Override
-        protected void onProgressUpdate(String... text) {
-            finalResult.setText(text[0]);
-        }
+        // Start the AsyncTask
+        new SimpleAsyncTask(mTextView, mProgressBar).execute(time);
+    }
 
-        @Override
-        protected void onPostExecute(String result) {
-            // Hide the progress bar and display the result
-            progressBar.setVisibility(View.GONE);
-            finalResult.setText(result);
-        }
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString(TEXT_STATE, mTextView.getText().toString());
     }
 }
